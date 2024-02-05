@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: Park In Peace
+  description: API Documentation
+  version: 1.0.0
+servers:
+  - url: http://172.21.148.166
+tags:
+  - name: car park
+    description: Fetch information related to car parks
+  - name: monitoring
+    description: Get updates about car park vacancy
+  - name: miscellaneous
+paths:
+  /:
+    get:
+      tags:
+        - miscellaneous
+      summary: Check whether the server is up and running
+      description: Check whether the server is up and running
+      operationId: ping
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: boolean
+  /api/v1/carpark/{id}:
+    get:
+      tags:
+        - car park
+      summary: Get basic information about a car park
+      description: Get basic information about a car park, e.g. name, address, coordinates, pricing, etc.
+      operationId: get<CarparkApiRoot.ById>
+      parameters:
+        - name: id
+          in: path
+          description: ID of the car park
+          required: true
+          schema:
+            type: string
+            example: "01HENGJMCHEP3QJMWRD9M46ZQE"
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carpark'
+        '404':
+          description: Car Park ID does not exist
+          content:
+            text/plain:
+              schema:
+                type: string
+                examples: [ "Nothing will be returned by the server" ]
+    post:
+      tags:
+        - car park
+      summary: Get realtime information about a car park
+      description: Get realtime information about a car park, e.g. current vacancy and predicted vacancy etc
+      operationId: post<CarparkApiRoot.ById>
+      parameters:
+        - name: id
+          in: path
+          description: ID of the car park
+          required: true
+          schema:
+            type: string
+            example: "01HENGJMCHEP3QJMWRD9M46ZQE"
+        - name: origin
+          in: query
+          description: Starting location, used to compute travelling time, in ISO6709+EPSG:4326 format
+          required: false
+          schema:
+            type: string
+            format: coordinates
+            example: "+01.3722655+103.8288232/"
+        - name: full
+          in: query
+          description: Whether basic information should be included in the response
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarparkAvailability'
+        '404':
+          description: Car Park ID does not exist
+          content:
+            text/plain:
+              schema:
+                type: string
+                examples: [ "Nothing will be returned by the server" ]
+  /api/v1/carpark/nearby:
+    post:
+      tags:
+        - car park
+      summary: Query nearby car parks
+      description: |-
+        Query all car parks within a set distance from a given location, optionally returning the estimated travel time and travelling distance
+      operationId: post<CarparkApiRoot.Nearby>
+      parameters:
+        - name: location
+          in: query
+          description: Coordinates of the intended location to search for close car parks, in ISO6709+EPSG:4326 format
+          required: true
+          schema:
+            type: string
+            format: coordinates
+            example: "+01.3180114+103.8624013/"
+        - name: searchRadius
+          in: query
+          description: Maximum tolerable distance to search, in metres
+          required: false
+          schema:
+            type: integer
+            format: int64
+            default: 500
+        - name: page
+          in: query
+          description: Page to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+            default: 15
+        - name: full
+          in: query
+          description: Whether to include basic information of the car park, e.g. total capacity, price, features, etc.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: origin
+          in: query
+          description: Starting location of the user, before the user starts the trip, which will be used to compute travelling time
+          required: false
+          schema:
+            type: string
+            format: coordinates
+            example: "+01.3722655+103.8288232/"
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryNearbyResponse'
+  /api/v1/carpark/{id}/subscribe:
+    post:
+      tags:
+        - monitoring
+      summary: Receive notifications when a car park becomes full
+      description: Receive notifications when a car park becomes full
+      operationId: subscribeCarpark
+      parameters:
+        - name: id
+          in: path
+          description: ID of the car park
+          required: true
+          schema:
+            type: string
+            example: "01HENGJMCHEP3QJMWRD9M46ZQE"
+        - name: token
+          in: body
+          description: Firebase token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscribeResponse'
+        '404':
+          description: Car Park ID does not exist
+          content:
+            text/plain:
+              schema:
+                type: string
+                examples: [ "Nothing will be returned by the server" ]
+  /api/v1/unsubscribe:
+    post:
+      tags:
+        - monitoring
+      summary: Stop receiving notifications about car parks
+      description: Stop receiving notifications about car parks
+      operationId: unsubscribe
+      parameters:
+        - name: token
+          in: body
+          description: Firebase token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+components:
+  schemas:
+    Carpark:
+      type: object
+      properties:
+        id:
+          type: string
+          examples: [ "01HENGJMCN7G2GJPZZMTYPZB5A" ]
+        ref:
+          type: string
+          examples: [ "ura/R0039" ]
+        name:
+          type: string
+          examples: [ "RANGOON LANE" ]
+        address:
+          type: string
+          examples: [ "8 RANGOON LANE SINGAPORE 218504" ]
+        epsg4326:
+          type: string
+          format: coordinates
+          examples: [ "+01.3165217+103.8539446/" ]
+        lots:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/Lot'
+        features:
+          type: array
+          items:
+            type: string
+            enum:
+              - pip.features/vehicle_washing
+              - pip.features/electric_charging
+        hash:
+          type: string
+          examples: [ "f67bb61b4ed619c405302495702d1175621b6050b85cf448224820ad1459fdf6" ]
+
+    CarparkAvailability:
+      type: object
+      properties:
+        id:
+          type: string
+          examples: [ "01HENGJKF33555VH724NA2VK18" ]
+        info:
+          $ref: '#/components/schemas/Carpark'
+        origin:
+          type: string
+          format: coordinates
+          examples: [ "+01.3722655+103.8288232/" ]
+        distance:
+          type: integer
+          format: int64
+          examples: [24000]
+        travelTime:
+          type: integer
+          format: int64
+          examples: [24]
+        lots:
+          $ref: '#/components/schemas/Prediction'
+        asof:
+          type: string
+          format: date-time
+          examples: [ "2023-11-08T14:16:00Z" ]
+
+    Lot:
+      type: object
+      properties:
+        vehicleType:
+          type: string
+          enum:
+            - pip.vehicle_type/car
+            - pip.vehicle_type/motorcycle
+            - pip.vehicle_type/heavy_vehicle
+        chargeType:
+          type: string
+          enum:
+            - pip.charge_type/weekday
+            - pip.charge_type/saturday
+            - pip.charge_type/sunday_ph
+        startTime:
+          type: integer
+          description: "In minutes since midnight"
+          examples: [ 510 ]
+        endTime:
+          type: integer
+          description: "In minutes since midnight"
+          examples: [ 1020 ]
+        rate:
+          type: integer
+          description: "In cents"
+          examples: [ 60 ]
+        minDuration:
+          type: integer
+          description: "In minutes"
+          examples: [ 30 ]
+        capacity:
+          type: integer
+          description: "Total capacity for this vehicle type"
+          examples: [ 24 ]
+        system:
+          type: string
+          enum:
+            - pip.parking_system/coupon
+            - pip.parking_system/electronic
+
+    Prediction:
+      type: object
+      properties:
+        "pip.vehicle_type/car":
+          $ref: '#/components/schemas/PredictionInner'
+        "pip.vehicle_type/motorcycle":
+          $ref: '#/components/schemas/PredictionInner'
+        "pip.vehicle_type/heavy_vehicle":
+          $ref: '#/components/schemas/PredictionInner'
+
+    PredictionInner:
+      type: object
+      properties:
+        c:
+          type: integer
+          examples: [ 11, 2, 4 ]
+        p:
+          type: integer
+          examples: [ 5, 6, 1 ]
+
+    SubscribeResponse:
+      type: object
+      properties:
+        expires:
+          type: string
+          format: date-time
+          description: "Subscription will be auto-terminated after this time"
+
+    QueryNearbyResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+          examples: [ 1 ]
+          description: Current page number
+        numPages:
+          type: integer
+          examples: [ 2 ]
+          description: Total number of pages
+        found:
+          type: integer
+          examples: [ 12 ]
+          description: Total number of results
+        results:
+          type: array
+          description: Results. Maximum of 10 results per page.
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/CarparkAvailability'

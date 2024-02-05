@@ -1,0 +1,9 @@
+ntu26.ss.parkinpeace.shared-pngs-0 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/build/generated/res/pngs/release
+ntu26.ss.parkinpeace.shared-resValues-1 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/build/generated/res/resValues/release
+ntu26.ss.parkinpeace.shared-mergeReleaseResources-2 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/build/intermediates/incremental/release/mergeReleaseResources/merged.dir
+ntu26.ss.parkinpeace.shared-mergeReleaseResources-3 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/build/intermediates/incremental/release/mergeReleaseResources/stripped.dir
+ntu26.ss.parkinpeace.shared-merged_res-4 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/build/intermediates/merged_res/release
+ntu26.ss.parkinpeace.shared-androidMain-5 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/src/androidMain/res
+ntu26.ss.parkinpeace.shared-androidRelease-6 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/src/androidRelease/res
+ntu26.ss.parkinpeace.shared-main-7 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/src/main/res
+ntu26.ss.parkinpeace.shared-release-8 /Users/marcusho/AndroidStudioProjects/2006-SCS2-SoftwareSquad/shared/src/release/res

@@ -1,0 +1,337 @@
+openapi: 3.1.0
+info:
+  title: Park In Peace
+  description: API Documentation
+  version: 1.0.0
+servers:
+  - url: https://172.21.148.166:8080 (must be connected to school vpn)
+tags:
+  - name: car park
+    description: Fetch information related to car parks
+  - name: monitoring
+    description: Get updates about car park vacancy
+paths:
+  /carpark/{id}:
+    get:
+      tags:
+        - car park
+      summary: Get basic information about a car park
+      description: Get basic information about a car park, e.g. name, address, coordinates, pricing, etc
+      operationId: getCarpark
+      parameters:
+        - name: id
+          in: path
+          description: ID of the car park (assigned by URA)
+          required: true
+          schema:
+            type: string
+            examples: ["N0005"]
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carpark'
+        '400':
+          description: Car Park ID does not exist
+    post:
+      tags:
+        - car park
+      summary: Get realtime information about a car park
+      description: Get realtime information about a car park, e.g. name, address, coordinates, pricing, etc
+      operationId: getCarparkRealtime
+      parameters:
+        - name: id
+          in: path
+          description: ID of the car park (assigned by URA)
+          required: true
+          schema:
+            type: string
+            examples: ["N0005"]
+        - name: origin
+          in: query
+          description: Starting location, used to compute travelling time, in "lat,long"
+          required: false
+          schema:
+            type: string
+            format: coordinates
+            examples: ["1.2345,6.7890"]
+        - name: full
+          in: query
+          description: Whether basic information should be included in the response
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarparkInfoMin'
+        '400':
+          description: Car Park ID does not exist or location does not exist within Singapore
+  /carpark/nearby:
+    post:
+      tags:
+        - car park
+      summary: Query nearby car parks
+      description: |- 
+        Query all car parks within a set distance from a given location, optionally returning the estimated travel time and travelling distance
+      operationId: queryNearbyCarpark
+      parameters:
+        - name: location
+          in: query
+          description: Coordinates of the intended destination to search for close car parks, in "lat,long" format
+          required: true
+          schema:
+            type: string
+            format: coordinates
+        - name: searchRadius
+          in: query
+          description: Maximum tolerable distance to search, in metres
+          required: false
+          schema:
+            type: integer
+            format: int64
+            default: 500
+        - name: limit
+          in: query
+          description: Maximum number of results to return
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: vehType
+          in: query
+          description: Filter results to only match this vehicle type
+          required: false
+          schema:
+            type: string
+            enum:
+              - car
+              - motorcycle
+              - heavy_vehicle
+        - name: full
+          in: query
+          description: Whether to include basic information of the car park, e.g. total capacity, price, features, etc. 
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: origin
+          in: query
+          description: Starting location of the user, before the user starts the trip, which will be used to compute travelling time
+          required: false
+          schema:
+            type: string
+            format: coordinates
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CarparkInfoMin'
+        '400':
+          description: Location not within mainland Singapore
+  /carpark/{id}/subscribe:
+    post:
+      tags:
+        - monitoring
+      summary: Receive notifications when a car park becomes full
+      description: Receive notifications when a car park becomes full
+      operationId: subscribeCarpark
+      parameters:
+        - name: id
+          in: path
+          description: ID of the car park (assigned by URA)
+          required: true
+          schema:
+            type: string
+            examples: ["N0006"]
+        - name: token
+          in: body
+          description: Firebase token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscribeResponse'
+        '400':
+          description: Car Park ID does not exist
+  /unsubscribe:
+    post:
+      tags:
+        - monitoring
+      summary: Stop receiving notifications about car parks
+      description: Stop receiving notifications about car parks
+      operationId: unsubscribe
+      parameters:
+        - name: token
+          in: body
+          description: Firebase token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: successful operation
+components:
+  schemas:
+    Carpark:
+      type: object
+      properties:
+        id:
+          type: string
+          examples: ["N0006"]
+        name:
+          type: string
+          examples: ["ANG MO KIO AVENUE 1 HEAVY VEHICLE PARK"]
+        address:
+          type: string
+          examples: ["Heavy Vehicle CP, Ang Mo Kio Ave 1, Singapore 569930"]
+        coordinates:
+          type: string
+          format: coordinates
+          examples: ["28956.4609,29088.2522"]
+        system:
+          type: string
+          examples: [electronic]
+          enum:
+            - coupon
+            - electronic
+        features:
+          type: array
+          feature:
+            type: string
+            enum:
+              - vehicle_washing
+              - electric_charging
+        pricing:
+          type: array
+          pricing:
+            $ref: '#/components/schemas/CarparkPricing'
+        capacity:
+          type: array
+          lots:
+            $ref: '#/components/schemas/CarparkCapacity'
+
+    CarparkInfoMin:
+      type: object
+      properties:
+        id:
+          type: string
+          examples: ["N0006"]
+        origin:
+          type: string
+          format: coordinates
+          examples: ["1.4609,1.2522"]
+        coordinates:
+          type: string
+          format: coordinates
+          examples: ["28956.4609,29088.2522"]
+        distance:
+          type: integer
+          format: int64
+          examples: [24000]
+        travelTime:
+          type: integer
+          format: int64
+          examples: [24]
+        lots:
+          $ref: '#/components/schemas/CarparkLots'
+        lastUpdated:
+          type: string
+          format: date-time
+          examples: ["2023-10-10T15:49:23+00:00"]
+    
+    CarparkLots:
+      type: object
+      properties:
+        car:
+          type: object
+          $ref: '#/components/schemas/CarparkLotInfo'
+        motorcycle:
+          type: object
+          $ref: '#/components/schemas/CarparkLotInfo'
+        heavy_vehicle:
+          type: object
+          $ref: '#/components/schemas/CarparkLotInfo'
+
+    CarparkLotInfo:
+      type: object
+      properties:
+        c:
+          type: integer
+          format: int64
+          description: current availability
+          examples: [4]
+        p:
+          type: integer
+          format: int64
+          description: predicted availability
+          examples: [5]
+        
+    CarparkPricing:
+      type: object
+      properties:
+        vehType:
+          type: string
+          examples: ["car"]
+        startTime:
+          type: string
+          examples: ["08.30 AM"]
+        endTime:
+          type: string
+          examples: ["05.00 PM"]
+        weekdayRate:
+          type: string
+          examples: ["$0.50"]
+        weekdayMin:
+          type: string
+          examples: ["30 mins"]
+        satdayRate:
+          type: string
+          examples: ["$0.50"]
+        satdayMin:
+          type: string
+          examples: ["30 mins"]
+        sunPHRate:
+          type: string
+          examples: ["$0.50"]
+        sunPHMin:
+          type: string
+          examples: ["30 mins"]
+
+    CarparkCapacity:
+      type: object
+      properties:
+        type:
+          type: string
+          examples: [car]
+          enum:
+            - car
+            - motorcycle
+            - heavy_vehicle
+        value:
+          type: integer
+          format: int64
+          examples: [10]
+
+    SubscribeResponse:
+      type: object
+      properties:
+        expires:
+          type: string
+          format: date-time
+          description: "Subscription will be auto-terminated after this time"
