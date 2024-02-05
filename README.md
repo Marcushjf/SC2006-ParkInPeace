@@ -1,5 +1,12 @@
 # 2006-SCS2-SoftwareSquad
 
+# Project Demo
+[![YouTube Preview](https://img.youtube.com/vi/Xov9AYpc3-I/0.jpg)](https://www.youtube.com/watch?v=Xov9AYpc3-I)
+
+---
+
+
+
 # Project Directory
 
     .
